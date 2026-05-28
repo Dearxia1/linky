@@ -5,7 +5,12 @@ import socket
 import threading
 import time
 import pyperclip
-import tkinter as tk
+try:
+    import tkinter as tk
+    HAS_TKINTER = True
+except ImportError:
+    HAS_TKINTER = False
+    tk = None
 from screeninfo import get_monitors
 from pynput.mouse import Controller as MouseController, Button, Listener as MouseListener
 from pynput.keyboard import Controller as KeyboardController, Key, KeyCode, Listener as KeyboardListener
@@ -588,17 +593,59 @@ class LinkyGUI:
         self.root.after(0, lambda: self.lbl_status.config(text=f"Estado: {text}", fg=color))
 
 def main():
-    root = tk.Tk()
-    app = LinkyGUI(root)
-    
-    # Clean exit hook
-    def on_closing():
-        app.stop_all()
-        root.destroy()
-        sys.exit(0)
+    if HAS_TKINTER:
+        root = tk.Tk()
+        app = LinkyGUI(root)
         
-    root.protocol("WM_DELETE_WINDOW", on_closing)
-    root.mainloop()
+        # Clean exit hook
+        def on_closing():
+            app.stop_all()
+            root.destroy()
+            sys.exit(0)
+            
+        root.protocol("WM_DELETE_WINDOW", on_closing)
+        root.mainloop()
+    else:
+        global role, other_position, running
+        print("=== LINKY (MODO CONSOLA) ===")
+        print("Advertencia: python3-tk no está instalado. Ejecutando en consola.\n")
+        
+        config = load_config()
+        role = config.get("role", "Master")
+        other_position = config.get("other_position", "Right")
+        
+        print("Configuración actual:")
+        print(f"  Rol: {role}")
+        print(f"  Ubicación de la otra PC: {other_position}\n")
+        
+        change = input("¿Deseas cambiar la configuración? (s/N): ").strip().lower()
+        if change == "s":
+            print("\n1. Master (PC con mouse/teclado físico)")
+            print("2. Slave (PC remota controlada)")
+            role_choice = input("Selecciona el rol (1 o 2): ").strip()
+            role = "Master" if role_choice == "1" else "Slave"
+            
+            print("\n¿Dónde se encuentra la OTRA PC respecto a esta?")
+            print("1. Izquierda")
+            print("2. Derecha")
+            pos_choice = input("Selecciona la posición (1 o 2): ").strip()
+            other_position = "Left" if pos_choice == "1" else "Right"
+            
+            save_config(role, other_position)
+            print("Configuración guardada.\n")
+            
+        running = True
+        
+        def console_status_fn(text, color):
+            print(f"[Estado] {text}")
+            
+        print("Iniciando servicio... Presiona Ctrl+C para detener.")
+        try:
+            service_loop(console_status_fn)
+        except KeyboardInterrupt:
+            print("\nDeteniendo servicio...")
+            running = False
+            sys.exit(0)
 
 if __name__ == "__main__":
     try:
