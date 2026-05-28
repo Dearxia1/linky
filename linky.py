@@ -1,5 +1,14 @@
 import os
 import sys
+if sys.platform.startswith('win'):
+    import ctypes
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    except Exception:
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass
 import json
 import socket
 import threading
@@ -118,9 +127,9 @@ def on_master_move(x, y):
         return
         
     trigger = False
-    if other_position == "Right" and x >= W_M - 1:
+    if other_position == "Right" and x >= W_M - 5:
         trigger = True
-    elif other_position == "Left" and x <= 0:
+    elif other_position == "Left" and x <= 5:
         trigger = True
         
     if trigger and tcp_sock:
