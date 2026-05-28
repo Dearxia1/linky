@@ -255,7 +255,10 @@ def handle_event(event):
             state = "REMOTE_CONTROLLED"
             ratio_y = event["ratio_y"]
             y = int(ratio_y * H_M)
-            x = 0 if other_position == "Right" else W_M - 1
+            if other_position == "Left":
+                x = 5
+            else:
+                x = W_M - 6
             mouse_controller.position = (x, y)
             
         elif evt_type == "mouse_move" and state == "REMOTE_CONTROLLED":
@@ -264,9 +267,9 @@ def handle_event(event):
             # Boundary check to return to Master
             cx_s, cy_s = mouse_controller.position
             transition_back = False
-            if other_position == "Right" and cx_s <= 0:
+            if other_position == "Left" and cx_s <= 0:
                 transition_back = True
-            elif other_position == "Left" and cx_s >= W_M - 1:
+            elif other_position == "Right" and cx_s >= W_M - 1:
                 transition_back = True
                 
             if transition_back:
