@@ -126,6 +126,10 @@ def on_master_move(x, y):
     if state != "LOCAL" or not running:
         return
         
+    # Debug logging near screen boundaries
+    if x <= 100 or x >= W_M - 100:
+        print(f"[Linky Debug] Mouse x={x}, y={y} | W_M={W_M} | H_M={H_M} | Socket conectado: {tcp_sock is not None} | Posición configurada: {other_position}")
+
     trigger = False
     if other_position == "Right" and x >= W_M - 5:
         trigger = True
