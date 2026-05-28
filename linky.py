@@ -30,8 +30,8 @@ def load_config():
     default_config = {
         "role": "Master",
         "other_position": "Right",
-        "tcp_port": 9999,
-        "udp_port": 9998
+        "tcp_port": 7999,
+        "udp_port": 7998
     }
     if os.path.exists(CONFIG_FILE):
         try:
