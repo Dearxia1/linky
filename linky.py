@@ -25,8 +25,42 @@ from pynput.mouse import Controller as MouseController, Button, Listener as Mous
 from pynput.keyboard import Controller as KeyboardController, Key, KeyCode, Listener as KeyboardListener
 
 CONFIG_FILE = "config.json"
-UDP_PORT = 9998
-TCP_PORT = 9999
+
+def load_config():
+    default_config = {
+        "role": "Master",
+        "other_position": "Right",
+        "tcp_port": 9999,
+        "udp_port": 9998
+    }
+    if os.path.exists(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r") as f:
+                config = json.load(f)
+                for k, v in default_config.items():
+                    if k not in config:
+                        config[k] = v
+                return config
+        except Exception:
+            pass
+    return default_config
+
+def save_config(r, pos):
+    global TCP_PORT, UDP_PORT
+    try:
+        with open(CONFIG_FILE, "w") as f:
+            json.dump({
+                "role": r,
+                "other_position": pos,
+                "tcp_port": TCP_PORT,
+                "udp_port": UDP_PORT
+            }, f, indent=4)
+    except Exception:
+        pass
+
+config_data = load_config()
+UDP_PORT = config_data["udp_port"]
+TCP_PORT = config_data["tcp_port"]
 
 # Premium Dark Colors (Catppuccin Palette)
 BG_DARK = "#1e1e2e"
@@ -72,22 +106,6 @@ pressed_keys = set()
 server_socket_ref = None  # Reference to close server socket on stop
 
 # ================= Configuration Management =================
-
-def load_config():
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, "r") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {"role": "Master", "other_position": "Right"}
-
-def save_config(r, pos):
-    try:
-        with open(CONFIG_FILE, "w") as f:
-            json.dump({"role": r, "other_position": pos}, f, indent=4)
-    except Exception:
-        pass
 
 # ================= Networking Helpers =================
 
@@ -434,10 +452,18 @@ def service_loop(update_status_fn):
             pass
             
     elif role == "Master":
+        manual_slave_ip = config_data.get("slave_ip")
         while running:
-            update_status_fn("Buscando...", ACCENT_PURPLE)
-            slave_ip = listen_udp_broadcast()
+            if manual_slave_ip:
+                slave_ip = manual_slave_ip
+                update_status_fn(f"Conectando a {slave_ip}...", ACCENT_PURPLE)
+            else:
+                update_status_fn("Buscando...", ACCENT_PURPLE)
+                slave_ip = listen_udp_broadcast()
+                
             if not slave_ip or not running:
+                if manual_slave_ip:
+                    time.sleep(2)
                 continue
                 
             try:
